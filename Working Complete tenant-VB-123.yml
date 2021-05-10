@@ -1,0 +1,103 @@
+---
+- name: Provision ACI Tenant
+  hosts: localhost
+  gather_facts: no
+
+  
+  
+  vars:
+    aci_login: &aci_login
+      host: apic1.vismait.no
+      user: admin
+      password: VismaAC1
+      use_proxy: false
+      validate_certs: false
+
+
+
+  tasks:
+    - name: Create tenants
+      aci_tenant:
+        <<: *aci_login
+        tenant: VB-123
+        description: VB-123
+
+
+    - name: Create VRFs
+      aci_vrf:
+        <<: *aci_login
+        tenant: VB-123
+        vrf_name: VB-123
+
+
+    - name: Create BDs
+      aci_bd:
+        <<: *aci_login
+        tenant: VB-123
+        vrf: VB-123
+        bd: BD_10.0.77.0
+        enable_routing: yes    
+
+
+    - name: Create BD subnets
+      aci_bd_subnet:
+        <<: *aci_login
+        tenant: VB-123
+        bd: BD_10.0.77.0
+        gateway: 10.0.77.1
+        mask: 24
+        scope: [private, shared]
+        state: present
+        
+      
+    - name: Get all subnets
+      aci_bd_subnet:
+        <<: *aci_login
+        state: query
+  
+
+    - name: Create APs
+      aci_ap:
+        <<: *aci_login
+        tenant: VB-123
+        app_profile: VB-ansible
+
+
+    - name: Create EPGs
+      aci_epg:
+        <<: *aci_login
+        tenant: VB-123
+        app_profile: VB-ansible
+        epg: VB-web-epg
+        bd: BD_10.0.77.0
+  
+
+    - name: Create portgroup in vmware
+      aci_epg_to_domain:
+        <<: *aci_login
+        app_profile: VB-ansible
+        deploy_immediacy: immediate
+        domain: ACI-Test-vDS01
+        domain_type: vmm
+        vm_provider: vmware
+        tenant: VB-123
+        epg: VB-web-epg
+        resolution_immediacy: immediate
+
+
+    - name: Bind static path to EPG
+      aci_static_binding_to_epg:
+        <<: *aci_login
+        app_profile: VB-ansible
+        epg: VB-web-epg
+        tenant: VB-123
+        interface_type: vpc
+        interface_mode: trunk
+        leafs: 111-112
+        interface: NOOSL01-CSW11-12_vpc40
+        pod_id: 1
+        encap_id: 3859
+        deploy_immediacy: immediate
+
+
+
