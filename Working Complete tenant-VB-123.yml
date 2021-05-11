@@ -9,7 +9,7 @@
     aci_login: &aci_login
       host: apic1.vismait.no
       user: admin
-      password: ********
+      password: VismaAC1
       use_proxy: false
       validate_certs: false
 
