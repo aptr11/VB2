@@ -1,0 +1,19 @@
+---
+- name: Provision ACI Tenant
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+    - name: Create new tenant
+      aci_tenant:
+        host: apic1.vismait.no
+        username: admin
+        password: VismaAC1
+        state: query
+        validate_certs: no
+      register: query_result
+
+    - name: Check values
+      debug:
+        msg: "{{ query_result }}"
