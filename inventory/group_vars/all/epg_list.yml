@@ -1,0 +1,12 @@
+---
+epg_list:
+  - { tenant: 'FG_TEST_tenant', ap: 'ansible', epg: 'epg1', bd: 'bd_10.0.20.0-24', vrf: 'FG_TEST', svi_ip: '10.0.20.1' }
+  - { tenant: 'FG_TEST_tenant', ap: 'ansible', epg: 'epg2', bd: 'bd_10.0.21.0-24', vrf: 'FG_TEST', svi_ip: '10.0.21.1' }
+
+
+
+
+
+
+
+

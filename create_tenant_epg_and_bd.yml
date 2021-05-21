@@ -3,11 +3,6 @@
   hosts: apic1
   gather_facts: no
   vars:
-    input_data:
-      - { tenant: 'FG_TEST_tenant', ap: 'ansible', epg: 'epg1', bd: 'bd_10.0.20.0-24', vrf: 'FG_TEST', svi_ip: '10.0.20.1' }
-      - { tenant: 'FG_TEST_tenant', ap: 'ansible', epg: 'epg2', bd: 'bd_10.0.21.0-24', vrf: 'FG_TEST', svi_ip: '10.0.21.1' }
-
-
     anchor: &anchor
       host: '{{ ansible_hostname }}'
       user: '{{ ansible_username }}'
@@ -15,9 +10,10 @@
       validate_certs: false
       tenant: '{{ item.tenant }}'
       state: present
+      annotation: orchestrator:ansible
     loop: &loop
       loop:
-        '{{ input_data }}'
+        '{{ epg_list }}'
       loop_control:
         pause: 0.2
 

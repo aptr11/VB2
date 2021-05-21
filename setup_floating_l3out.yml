@@ -38,6 +38,7 @@
       password: '{{ ansible_password }}'
       validate_certs: false
       state: present
+      annotation: orchestrator:ansible
     loop: &loop
       loop:
         '{{ input_data }}'
