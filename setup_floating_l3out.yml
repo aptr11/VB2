@@ -1,37 +1,12 @@
 ---
+#Playbook notes:
+# Usage: ansible-playbook setup_floating_l3out.yml --extra-vars @l3outs/XXX.yml
+
 - name: Create L3out
   hosts: apic1
   gather_facts: no
 
-#Playbook notes:
-# EPGs and BDs must be created prior to running this playbook
-#
-# Hard coded:
-#  - l3dom: PA-TEST-L3-Domain
-#  - vmmp-VMware/dom: ACI-Test-vDS01
-#
-
-
   vars:
-    tenant: FG_TEST_tenant
-    vrf: FG_TEST
-    BDs:
-      - bd_10.0.20.0-24
-      - bd_10.0.21.0-24
-    epgs:
-      - { ap: ansible, epg: epg1 }
-      - { ap: ansible, epg: epg2 }
-    anchor1: pod-1/node-111
-    anchor1_ip: 10.1.172.17/28
-    anchor2: pod-2/node-211
-    anchor2_ip: 10.1.172.18/28
-    floating_ip: 10.1.172.19/28
-    firewall_ip: 10.1.172.20
-    firewall_asn: "65526"
-    vlan: 2834      
-    # check next available vlan id in vcenter, this must be unique!
-
-
     anchor: &anchor
       host: '{{ ansible_hostname }}'
       user: '{{ ansible_username }}'
@@ -109,6 +84,8 @@
           {
               "l3extOut": {
                   "attributes": {
+                      "annotation": "orchestrator:ansible",
+                      "descr": "",
                       "dn": "uni/tn-{{ tenant }}/out-{{ vrf }}-default-l3out",
                       "enforceRtctrl": "export",
                       "mplsEnabled": "no",
@@ -120,8 +97,8 @@
                       {
                           "l3extRsL3DomAtt": {
                               "attributes": {
-                                  "annotation": "",
-                                  "tDn": "uni/l3dom-PA-TEST-L3-Domain",
+                                  "annotation": "orchestrator:ansible",
+                                  "tDn": "uni/l3dom-{{ l3domain }}",
                                   "userdom": ":all:"
                               }
                           }
@@ -129,7 +106,7 @@
                       {
                           "l3extRsEctx": {
                               "attributes": {
-                                  "annotation": "",
+                                  "annotation": "orchestrator:ansible",
                                   "tnFvCtxName": "{{ vrf }}",
                                   "userdom": "all"
                               }
@@ -138,6 +115,9 @@
                       {
                           "l3extLNodeP": {
                               "attributes": {
+                                  "annotation": "orchestrator:ansible",
+                                  "configIssues": "",
+                                  "descr": "",
                                   "name": "nodeProfiles",
                                   "tag": "yellow-green",
                                   "targetDscp": "unspecified",
@@ -147,7 +127,7 @@
                                   {
                                       "l3extRsNodeL3OutAtt": {
                                           "attributes": {
-                                              "annotation": "",
+                                              "annotation": "orchestrator:ansible",
                                               "configIssues": "",
                                               "rtrId": "{{ anchor1_ip[:-3] }}",
                                               "rtrIdLoopBack": "no",
@@ -170,6 +150,7 @@
                                   {
                                       "l3extLIfP": {
                                           "attributes": {
+                                              "annotation": "orchestrator:ansible",
                                               "descr": "",
                                               "name": "interfaceProfiles",
                                               "prio": "unspecified",
@@ -181,7 +162,7 @@
                                                   "l3extVirtualLIfP": {
                                                       "attributes": {
                                                           "addr": "{{ anchor1_ip }}",
-                                                          "annotation": "",
+                                                          "annotation": "orchestrator:ansible",
                                                           "autostate": "disabled",
                                                           "descr": "",
                                                           "encap": "vlan-{{ vlan }}",
@@ -201,12 +182,12 @@
                                                           {
                                                               "l3extRsDynPathAtt": {
                                                                   "attributes": {
-                                                                      "annotation": "",
+                                                                      "annotation": "orchestrator:ansible",
                                                                       "floatingAddr": "{{ floating_ip }}",
                                                                       "forgedTransmit": "Disabled",
                                                                       "macChange": "Disabled",
                                                                       "promMode": "Disabled",
-                                                                      "tDn": "uni/vmmp-VMware/dom-ACI-Test-vDS01",
+                                                                      "tDn": "uni/vmmp-VMware/dom-{{ vmware_domain }}",
                                                                       "userdom": ":all:"
                                                                   }
                                                               }
@@ -218,7 +199,7 @@
                                                                       "addrTCtrl": "af-ucast",
                                                                       "adminSt": "enabled",
                                                                       "allowedSelfAsCnt": "3",
-                                                                      "annotation": "",
+                                                                      "annotation": "orchestrator:ansible",
                                                                       "ctrl": "",
                                                                       "ctrlExt": "",
                                                                       "descr": "",
@@ -233,6 +214,7 @@
                                                                       {
                                                                           "bgpRsPeerPfxPol": {
                                                                               "attributes": {
+                                                                                  "annotation": "",
                                                                                   "tnBgpPeerPfxPolName": "",
                                                                                   "userdom": "all"
                                                                               }
@@ -241,6 +223,7 @@
                                                                       {
                                                                           "bgpAsP": {
                                                                               "attributes": {
+                                                                                  "annotation": "orchestrator:ansible",
                                                                                   "asn": "{{ firewall_asn }}",
                                                                                   "descr": "",
                                                                                   "name": "",
@@ -259,6 +242,7 @@
                                                   "l3extVirtualLIfP": {
                                                       "attributes": {
                                                           "addr": "{{ anchor2_ip }}",
+                                                          "annotation": "orchestrator:ansible",
                                                           "autostate": "disabled",
                                                           "encap": "vlan-{{ vlan }}",
                                                           "encapScope": "local",
@@ -277,12 +261,12 @@
                                                           {
                                                               "l3extRsDynPathAtt": {
                                                                   "attributes": {
-                                                                      "annotation": "",
+                                                                      "annotation": "orchestrator:ansible",
                                                                       "floatingAddr": "{{ floating_ip }}",
                                                                       "forgedTransmit": "Disabled",
                                                                       "macChange": "Disabled",
                                                                       "promMode": "Disabled",
-                                                                      "tDn": "uni/vmmp-VMware/dom-ACI-Test-vDS01",
+                                                                      "tDn": "uni/vmmp-VMware/dom-{{ vmware_domain }}",
                                                                       "userdom": ":all:"
                                                                   }
                                                               }
@@ -294,7 +278,7 @@
                                                                       "addrTCtrl": "af-ucast",
                                                                       "adminSt": "enabled",
                                                                       "allowedSelfAsCnt": "3",
-                                                                      "annotation": "",
+                                                                      "annotation": "orchestrator:ansible",
                                                                       "ctrl": "",
                                                                       "ctrlExt": "",
                                                                       "descr": "",
@@ -319,7 +303,7 @@
                                                                       {
                                                                           "bgpAsP": {
                                                                               "attributes": {
-                                                                                  "annotation": "",
+                                                                                  "annotation": "orchestrator:ansible",
                                                                                   "asn": "{{ firewall_asn }}",
                                                                                   "descr": "",
                                                                                   "name": "",
@@ -388,6 +372,7 @@
                       {
                           "l3extInstP": {
                               "attributes": {
+                                  "annotation": "orchestrator:ansible",
                                   "descr": "",
                                   "exceptionTag": "",
                                   "floodOnEncap": "disabled",
@@ -403,6 +388,7 @@
                                   {
                                       "fvRsProv": {
                                           "attributes": {
+                                              "annotation": "orchestrator:ansible",
                                               "intent": "install",
                                               "matchT": "AtleastOne",
                                               "prio": "unspecified",
@@ -415,6 +401,8 @@
                                       "l3extSubnet": {
                                           "attributes": {
                                               "aggregate": "",
+                                              "annotation": "orchestrator:ansible",
+                                              "descr": "",
                                               "ip": "0.0.0.0/0",
                                               "name": "",
                                               "nameAlias": "",
@@ -426,6 +414,7 @@
                                   {
                                       "fvRsCustQosPol": {
                                           "attributes": {
+                                              "annotation": "",
                                               "tnQosCustomPolName": "",
                                               "userdom": "all"
                                           }
@@ -437,6 +426,7 @@
                       {
                           "bgpExtP": {
                               "attributes": {
+                                  "annotation": "",
                                   "descr": "",
                                   "nameAlias": "",
                                   "userdom": ":all:"

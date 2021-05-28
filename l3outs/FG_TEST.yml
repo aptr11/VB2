@@ -1,0 +1,23 @@
+---
+
+tenant: FG_TEST_tenant
+vrf: FG_TEST
+BDs:
+  - bd_10.0.20.0-24
+  - bd_10.0.21.0-24
+epgs:
+  - { ap: ansible, epg: epg1 }
+  - { ap: ansible, epg: epg2 }
+anchor1: pod-1/node-111
+anchor1_ip: 10.1.172.17/28
+anchor2: pod-2/node-211
+anchor2_ip: 10.1.172.18/28
+floating_ip: 10.1.172.19/28
+firewall_ip: 10.1.172.20
+firewall_asn: "65526"
+vlan: 2834      # check next available vlan id in vcenter, this must be unique!
+l3domain: PA-TEST-L3-Domain
+vmware_domain: ACI-Test-vDS01
+
+
+
