@@ -18,7 +18,14 @@
       loop:
         '{{ input_data }}'
 
+    l3out_name: '{{ vrf }}-default-l3out'
+
   tasks:
+    - name: Check if tenant is VISMA_IT_Transit and adjust L3out name accordingly
+      set_fact:
+        l3out_name: '{{ vrf }}-{{ vlan }}-l3out'
+      when: tenant == 'VISMA_IT_Transit'
+
     - name: Create VRF
       cisco.aci.aci_vrf:
         tenant: '{{ tenant }}'
@@ -33,6 +40,7 @@
         contract: '{{ vrf }}-external-networks'
         scope: context
         <<: *anchor
+      when: epgs is defined
 
     - name: Add contract subject
       cisco.aci.aci_contract_subject:
@@ -43,6 +51,7 @@
         priority: level1
         dscp: unspecified
         <<: *anchor
+      when: epgs is defined
 
     - name: Add contract subject to filter binding
       cisco.aci.aci_contract_subject_to_filter:
@@ -51,6 +60,7 @@
         subject: default
         filter: default
         <<: *anchor
+      when: epgs is defined
 
     - name: Add contract to EPG binding
       cisco.aci.aci_epg_to_contract:
@@ -62,6 +72,7 @@
         <<: *anchor
       loop:
         '{{ epgs }}'
+      when: epgs is defined
 
     - name: Bind Bridge Domain to L3out
       cisco.aci.aci_bd_to_l3out:
@@ -71,6 +82,7 @@
         <<: *anchor
       loop:
         '{{ BDs }}'
+      when: BDs is defined
 
     - name: Create L3out (using JSON string)
       cisco.aci.aci_rest:
@@ -86,7 +98,7 @@
                   "attributes": {
                       "annotation": "orchestrator:ansible",
                       "descr": "",
-                      "dn": "uni/tn-{{ tenant }}/out-{{ vrf }}-default-l3out",
+                      "dn": "uni/tn-{{ tenant }}/out-{{ l3out_name }}",
                       "enforceRtctrl": "export",
                       "mplsEnabled": "no",
                       "name": "{{ vrf }}-default-l3out",
@@ -139,6 +151,7 @@
                                   {
                                       "l3extRsNodeL3OutAtt": {
                                           "attributes": {
+                                              "annotation": "orchestrator:ansible",
                                               "configIssues": "",
                                               "rtrId": "{{ anchor2_ip[:-3] }}",
                                               "rtrIdLoopBack": "no",
@@ -386,18 +399,6 @@
                               },
                               "children": [
                                   {
-                                      "fvRsProv": {
-                                          "attributes": {
-                                              "annotation": "orchestrator:ansible",
-                                              "intent": "install",
-                                              "matchT": "AtleastOne",
-                                              "prio": "unspecified",
-                                              "tnVzBrCPName": "{{ vrf }}-external-networks",
-                                              "userdom": ":all:"
-                                          }
-                                      }
-                                  },
-                                  {
                                       "l3extSubnet": {
                                           "attributes": {
                                               "aggregate": "",
@@ -437,6 +438,17 @@
               }
           }
 
+    - name: Bind contract to external EPG
+      cisco.aci.aci_l3out_extepg_to_contract:
+        tenant: '{{ tenant }}'
+        l3out: '{{ l3out_name }}'
+        extepg : External_EPG
+        contract: '{{ vrf }}-external-networks'
+        contract_type: provider
+        <<: *anchor
+      loop:
+        '{{ epgs }}'
+      when: epgs is defined
 
 
 
