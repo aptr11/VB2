@@ -1,0 +1,74 @@
+---
+- name: Populate ACI with ESXI Interfaces
+  hosts: apic1
+  gather_facts: no
+
+  vars:
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: "{{ ansible_username }}"
+      password: "{{ ansible_password }}"
+      validate_certs: false
+      state: present
+      annotation: orchestrator:ansible
+
+    loop: &loop
+      loop:
+        '{{ esxi_interfaces }}'
+
+  tasks:
+    - name: Create Interface Policy
+      cisco.aci.aci_interface_policy_leaf_policy_group:
+        lag_type: leaf
+        policy_group: "{{ 'ESXi_' + item.aep + '_policy_group' }}"
+        link_level_policy: default
+        cdp_policy: default
+        lldp_policy: Enable-LLDP
+        mcp_policy: MCP_Enabled
+        aep: '{{ item.aep }}'
+        stp_interface_policy: default
+        <<: *anchor
+      <<: *loop
+
+    - name: Associate interface to first interface policy
+      cisco.aci.aci_access_port_to_interface_policy_leaf_profile:
+        interface_profile: '{{ item.switch1 }}'
+        access_port_selector: "{{ 'Eth1_' + item.port|string }}"
+        policy_group: "{{ 'ESXi_' + item.aep + '_policy_group' }}"
+        interface_type: switch_port
+        description: '{{ item.name }}'
+        <<: *anchor
+      <<: *loop
+
+    - name: Associate access port block to first interface selector
+      cisco.aci.aci_access_port_block_to_access_port:
+        interface_profile: '{{ item.switch1 }}'
+        access_port_selector: "{{ 'Eth1_' + item.port|string }}"
+        port_blk: block2
+        from_port: '{{ item.port }}' 
+        to_port: '{{ item.port }}' 
+        port_blk_description: '{{ item.name }}'
+        <<: *anchor
+      <<: *loop
+
+    - name: Associate interface to second interface policy
+      cisco.aci.aci_access_port_to_interface_policy_leaf_profile:
+        interface_profile: '{{ item.switch2 }}'
+        access_port_selector: "{{ 'Eth1_' + item.port|string }}"
+        policy_group: "{{ 'ESXi_' + item.aep + '_policy_group' }}"
+        interface_type: switch_port
+        description: '{{ item.name }}'
+        <<: *anchor
+      <<: *loop
+
+    - name: Associate access port block to second interface selector
+      cisco.aci.aci_access_port_block_to_access_port:
+        interface_profile: '{{ item.switch2 }}'
+        access_port_selector: "{{ 'Eth1_' + item.port|string }}"
+        port_blk: block2
+        from_port: '{{ item.port }}' 
+        to_port: '{{ item.port }}' 
+        port_blk_description: '{{ item.name }}'
+        <<: *anchor
+      <<: *loop
+

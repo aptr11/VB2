@@ -1,0 +1,13 @@
+---
+esxi_interfaces:
+  - { name: vitesxr111, switch1: NOOSL01-LEF01, switch2: NOOSL01-LEF02, port: 1, aep: VCD-POC_AEP }
+  - { name: vitesxr113, switch1: NOOSL01-LEF01, switch2: NOOSL01-LEF02, port: 2, aep: VCD-POC_AEP }
+  - { name: vitesxr114, switch1: NOOSL01-LEF01, switch2: NOOSL01-LEF02, port: 3, aep: VCD-POC_AEP }
+  - { name: vitesxr117, switch1: NOOSL01-LEF01, switch2: NOOSL01-LEF02, port: 4, aep: VCD-POC_AEP }
+  - { name: vitesxr118, switch1: NOOSL01-LEF01, switch2: NOOSL01-LEF02, port: 5, aep: VCD-POC_AEP }
+  - { name: vitesxu112, switch1: NOOSL02-LEF01, switch2: NOOSL02-LEF02, port: 1, aep: VCD-POC_AEP }
+  - { name: vitesxu115, switch1: NOOSL02-LEF01, switch2: NOOSL02-LEF02, port: 2, aep: VCD-POC_AEP }
+  - { name: vitesxu116, switch1: NOOSL02-LEF01, switch2: NOOSL02-LEF02, port: 3, aep: VCD-POC_AEP }
+  - { name: vitesxu119, switch1: NOOSL02-LEF01, switch2: NOOSL02-LEF02, port: 4, aep: VCD-POC_AEP }
+  - { name: vitesxu120, switch1: NOOSL02-LEF01, switch2: NOOSL02-LEF02, port: 5, aep: VCD-POC_AEP }
+
