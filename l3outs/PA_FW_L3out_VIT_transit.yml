@@ -2,7 +2,8 @@
 
 tenant: VISMA_IT_Transit
 vrf: DC_transfer
-
+subnets:
+  - 10.36.1.0/24
 anchor1: pod-1/node-111
 anchor1_ip: 10.1.172.65/28
 anchor2: pod-2/node-211

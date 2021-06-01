@@ -1,0 +1,55 @@
+---
+
+- name: Deploy EPGs statically to VCD-POC
+  hosts: apic1
+  gather_facts: no
+  vars:
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      state: present
+      annotation: orchestrator:ansible
+
+    epgs:
+      - { tenant: Vmware_Cloud_Director, ap: ansible, epg: vc-mgmt, vlan: 1970}
+
+  tasks:
+    - name: Loop vlans and esxi interfaces 
+      cisco.aci.aci_static_binding_to_epg:
+        tenant: '{{ item.0.tenant }}'
+        ap: '{{ item.0.ap }}'
+        epg: '{{ item.0.epg }}'
+        interface_type: switch_port
+        interface_mode: trunk
+        leafs: '{{ item.1.id1 }}' 
+        interface: '1/{{ item.1.port }}'
+        pod_id: '{{ item.1.switch1[6] }}'
+        encap_id: '{{ item.0.vlan }}'
+        deploy_immediacy: lazy
+        <<: *anchor
+      loop: "{{ epgs|product(esxi_interfaces)|list }}"
+      when: '"VCD-POC_AEP" in item.1.aep'
+      loop_control:
+        pause: 0.2
+
+    - name: Loop vlans and esxi interfaces 
+      cisco.aci.aci_static_binding_to_epg:
+        tenant: '{{ item.0.tenant }}'
+        ap: '{{ item.0.ap }}'
+        epg: '{{ item.0.epg }}'
+        interface_type: switch_port
+        interface_mode: trunk
+        leafs: '{{ item.1.id2 }}' 
+        interface: '1/{{ item.1.port }}'
+        pod_id: '{{ item.1.switch2[6] }}'
+        encap_id: '{{ item.0.vlan }}'
+        deploy_immediacy: lazy
+        <<: *anchor
+      loop: "{{ epgs|product(esxi_interfaces)|list }}"
+      when: '"VCD-POC_AEP" in item.1.aep'
+      loop_control:
+        pause: 0.2
+
+

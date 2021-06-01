@@ -1,0 +1,19 @@
+---
+
+tenant: Vmware_Cloud_Director
+vrf: vrf1
+BDs:
+  - bd_10.36.1.0-24
+epgs:
+  - { ap: ansible, epg: vc-mgmt }
+anchor1: pod-1/node-111
+anchor1_ip: 10.1.172.81/28
+anchor2: pod-2/node-211
+anchor2_ip: 10.1.172.82/28
+floating_ip: 10.1.172.83/28
+firewall_ip: 10.1.172.84
+firewall_asn: "65525"
+vlan: 2838      # check next available vlan id in vcenter, this must be unique!
+l3domain: PA-TEST-L3-Domain
+vmware_domain: ACI-Test-vDS01
+
