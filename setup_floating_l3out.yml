@@ -101,7 +101,7 @@
                       "dn": "uni/tn-{{ tenant }}/out-{{ l3out_name }}",
                       "enforceRtctrl": "export",
                       "mplsEnabled": "no",
-                      "name": "{{ vrf }}-default-l3out",
+                      "name": "{{ l3out_name }}",
                       "targetDscp": "unspecified",
                       "userdom": ":all:"
                   },
