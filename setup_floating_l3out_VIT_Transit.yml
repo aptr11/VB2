@@ -1,10 +1,8 @@
 ---
 #Playbook notes:
-# Usage: ansible-playbook setup_floating_l3out.yml --extra-vars @l3outs/XXX.yml
-#
-# Don't use playbook this for l3outs in tenant VISMA_IT_Transit!
+# Usage: ansible-playbook setup_floating_l3out_VIT_Transit.yml --extra-vars @l3outs/XXX.yml
 
-- name: Create L3out
+- name: Create floating L3out
   hosts: apic1
   gather_facts: no
 
@@ -16,20 +14,11 @@
       validate_certs: false
       state: present
       annotation: orchestrator:ansible
-    loop: &loop
-      loop:
-        '{{ input_data }}'
-
-    l3out_name: '{{ vrf }}-default-l3out'
 
   tasks:
-    - name: Create VRF
-      cisco.aci.aci_vrf:
-        tenant: '{{ tenant }}'
-        vrf: '{{ vrf }}'
-        policy_control_preference: enforced
-        policy_control_direction: ingress
-        <<: *anchor
+    - name: Create L3out name
+      set_fact:
+        l3out_name: '{{ vrf }}-{{ vlan }}-l3out'
 
     - name: Add new contract
       cisco.aci.aci_contract:
@@ -55,26 +44,6 @@
         subject: default
         filter: default
         <<: *anchor
-
-    - name: Add contract to EPG binding
-      cisco.aci.aci_epg_to_contract:
-        tenant: '{{ tenant }}'
-        ap: '{{ item.ap }}'
-        epg: '{{ item.epg }}'
-        contract: '{{ vrf }}-external-networks'
-        contract_type: consumer
-        <<: *anchor
-      loop:
-        '{{ epgs }}'
-
-    - name: Bind Bridge Domain to L3out
-      cisco.aci.aci_bd_to_l3out:
-        tenant: '{{ tenant }}'
-        bd: '{{ item }}'
-        l3out: '{{ vrf }}-default-l3out'
-        <<: *anchor
-      loop:
-        '{{ BDs }}'
 
     - name: Create L3out (using JSON string)
       cisco.aci.aci_rest:
@@ -133,7 +102,7 @@
                                           "attributes": {
                                               "annotation": "orchestrator:ansible",
                                               "configIssues": "",
-                                              "rtrId": "{{ anchor1_ip[:-3] }}",
+                                              "rtrId": "10.0.0.{{ anchor1[-3:] }}",
                                               "rtrIdLoopBack": "no",
                                               "tDn": "topology/{{ anchor1 }}",
                                               "userdom": ":all:"
@@ -145,7 +114,7 @@
                                           "attributes": {
                                               "annotation": "orchestrator:ansible",
                                               "configIssues": "",
-                                              "rtrId": "{{ anchor2_ip[:-3] }}",
+                                              "rtrId": "10.0.0.{{ anchor2[-3:] }}",
                                               "rtrIdLoopBack": "no",
                                               "tDn": "topology/{{ anchor2 }}",
                                               "userdom": ":all:"
@@ -382,7 +351,7 @@
                                   "exceptionTag": "",
                                   "floodOnEncap": "disabled",
                                   "matchT": "AtleastOne",
-                                  "name": "External_EPG",
+                                  "name": "External_EPG_{{ vlan }}",
                                   "nameAlias": "",
                                   "prefGrMemb": "exclude",
                                   "prio": "unspecified",
@@ -390,20 +359,6 @@
                                   "userdom": ":all:"
                               },
                               "children": [
-                                  {
-                                      "l3extSubnet": {
-                                          "attributes": {
-                                              "aggregate": "",
-                                              "annotation": "orchestrator:ansible",
-                                              "descr": "",
-                                              "ip": "0.0.0.0/0",
-                                              "name": "",
-                                              "nameAlias": "",
-                                              "scope": "import-security",
-                                              "userdom": ":all:"
-                                          }
-                                      }
-                                  },
                                   {
                                       "fvRsCustQosPol": {
                                           "attributes": {
@@ -434,13 +389,20 @@
       cisco.aci.aci_l3out_extepg_to_contract:
         tenant: '{{ tenant }}'
         l3out: '{{ l3out_name }}'
-        extepg : External_EPG
+        extepg : 'External_EPG_{{ vlan }}'
         contract: '{{ vrf }}-external-networks'
-        contract_type: provider
+        contract_type: consumer
         <<: *anchor
-      loop:
-        '{{ epgs }}'
 
+    - name: Add External Subnets
+      cisco.aci.aci_l3out_extsubnet:
+        tenant: '{{ tenant }}'
+        l3out: '{{ l3out_name }}'
+        extepg : 'External_EPG_{{ vlan }}'
+        network: '{{ item }}'
+        scope: import-security
+        <<: *anchor
+      loop: '{{ subnets }}'
 
 
 
