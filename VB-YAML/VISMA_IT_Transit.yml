@@ -1,0 +1,83 @@
+---
+- name: Populate ACI with EPGs, APs, BDs 
+  hosts: apic1
+  gather_facts: no
+  vars:
+    input_data:
+      - { tenant: 'VISMA_IT_Transit', ap: 'ansible', epg: 'epg1', bd: 'bd_10.0.78.0-24', vrf: 'DC_transfer', svi_ip: '10.0.78.1' }
+      - { tenant: 'VISMA_IT_Transit', ap: 'ansible', epg: 'epg2', bd: 'bd_10.0.79.0-24', vrf: 'INTERNET', svi_ip: '10.0.79.1' }
+      - { tenant: 'VISMA_IT_Transit', ap: 'ansible', epg: 'epg3', bd: 'bd_10.0.80.0-24', vrf: 'Office', svi_ip: '10.0.80.1' }
+
+
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      tenant: '{{ item.tenant }}'
+      state: present
+    loop: &loop
+      loop:
+        '{{ input_data }}'
+      loop_control:
+        pause: 0.2
+
+  tasks:
+    - name: Create tenants
+      cisco.aci.aci_tenant:
+        <<: *anchor
+      <<: *loop
+
+    - name: Create VRFs
+      cisco.aci.aci_vrf:
+        tenant: '{{ item.tenant }}'
+        vrf: '{{ item.vrf }}'
+        <<: *anchor
+      <<: *loop
+
+
+    - name: Create BDs
+      cisco.aci.aci_bd:
+        bd: '{{ item.bd }}'
+        vrf: '{{ item.vrf }}'
+        arp_flooding: no
+        #l2_unknown_unicast: flood
+        #endpoint_clear: yes
+        <<: *anchor
+      <<: *loop
+
+    - name: Create subnet
+      cisco.aci.aci_bd_subnet:
+        bd: '{{ item.bd }}'
+        gateway: '{{ item.svi_ip }}'
+        mask: '{{ item.bd[-2:] }}'
+        scope: public
+        <<: *anchor
+      <<: *loop
+
+    - name: Create APs
+      cisco.aci.aci_ap:
+        ap: '{{ item.ap }}'
+        <<: *anchor
+      <<: *loop
+
+    - name: Create EPGs
+      cisco.aci.aci_epg:
+        ap: '{{ item.ap }}'
+        epg: '{{ item.epg }}'
+        bd: '{{ item.bd }}'
+        <<: *anchor
+      <<: *loop
+
+    - name: Create portgroup in vmware
+      cisco.aci.aci_epg_to_domain:
+        ap: '{{ item.ap }}'
+        deploy_immediacy: immediate
+        domain: ACI-Test-vDS01
+        domain_type: vmm
+        vm_provider: vmware
+        epg: '{{ item.epg }}'
+        resolution_immediacy: immediate
+        <<: *anchor
+      <<: *loop
+
