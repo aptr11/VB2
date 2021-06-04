@@ -174,7 +174,7 @@
                                                                       "adminSt": "enabled",
                                                                       "allowedSelfAsCnt": "3",
                                                                       "annotation": "orchestrator:ansible",
-                                                                      "ctrl": "",
+                                                                      "ctrl": "allow-self-as",
                                                                       "ctrlExt": "",
                                                                       "descr": "",
                                                                       "name": "",
@@ -253,7 +253,7 @@
                                                                       "adminSt": "enabled",
                                                                       "allowedSelfAsCnt": "3",
                                                                       "annotation": "orchestrator:ansible",
-                                                                      "ctrl": "",
+                                                                      "ctrl": "allow-self-as",
                                                                       "ctrlExt": "",
                                                                       "descr": "",
                                                                       "name": "",
@@ -403,6 +403,16 @@
         scope: import-security
         <<: *anchor
       loop: '{{ subnets }}'
+
+    - name: Add 10.0.0.0/8 if vrf DC_transfer
+      cisco.aci.aci_l3out_extsubnet:
+        tenant: '{{ tenant }}'
+        l3out: '{{ l3out_name }}'
+        extepg : 'External_EPG_{{ vlan }}'
+        network: 10.0.0.0/8
+        scope: export-rtctrl
+        <<: *anchor
+      when: 'vrf is "DC_transfer"'
 
 
 
