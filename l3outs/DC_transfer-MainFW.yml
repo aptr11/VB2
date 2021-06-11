@@ -1,0 +1,25 @@
+---
+tenant: VISMA_IT_Transit
+l3out_name: DC_transfer-MainFW-l3out
+vrf: DC_transfer
+l3domain: MainFW_L3Dom
+vlan: 102
+aci_vip: 10.32.64.242/28
+
+first_vpc: vitfwgd001
+leaf1_id: "111"
+leaf1_ip: 10.32.64.243/28
+leaf2_id: "112"
+leaf2_ip: 10.32.64.244/28
+
+second_vpc: vitfwgd002
+leaf3_id: "211"
+leaf3_ip: 10.32.64.245/28
+leaf4_id: "212"
+leaf4_ip: 10.32.64.246/28
+
+next_hop_ip: 10.32.64.241
+static_routes:
+  - 10.0.0.0/8
+
+

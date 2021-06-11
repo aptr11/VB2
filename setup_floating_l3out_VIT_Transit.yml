@@ -414,5 +414,15 @@
         <<: *anchor
       when: 'vrf is "DC_transfer"'
 
+    - name: Add 0.0.0.0/0 if vrf INTERNET
+      cisco.aci.aci_l3out_extsubnet:
+        tenant: '{{ tenant }}'
+        l3out: '{{ l3out_name }}'
+        extepg : 'External_EPG_{{ vlan }}'
+        network: 0.0.0.0/0
+        scope: export-rtctrl
+        <<: *anchor
+      when: 'vrf is "INTERNET"'
+
 
 

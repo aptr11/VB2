@@ -1,0 +1,395 @@
+---
+#Playbook notes:
+# Usage: ansible-playbook setup_static_l3out_with_vpc.yml --extra-vars @l3outs/XXX.yml
+#
+# Router-IDs will be 10.0.0.<leaf_id>
+# We do not support track/ip-sla policy at the moment
+#
+
+- name: Create L3out with static routing and vpc
+  hosts: apic1
+  gather_facts: no
+
+  vars:
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      tenant: '{{ tenant }}'
+      state: present
+      annotation: orchestrator:ansible
+
+  tasks:
+    - name: Create L3Out
+      cisco.aci.aci_l3out:
+        l3out_name: '{{ l3out_name }}'
+        domain: '{{ l3domain }}'
+        vrf: '{{ vrf }}'
+        l3protocol: static
+        route_control: export
+        <<: *anchor
+
+    - name: Create L3out node profile (using JSON string)
+      cisco.aci.aci_rest:
+        host: '{{ ansible_hostname }}'
+        username: '{{ ansible_username }}'
+        password: '{{ ansible_password }}'
+        validate_certs: false
+        path: /api/mo/uni.json
+        method: post
+        content:
+          {
+            "l3extLNodeP": {
+              "attributes": {
+                "annotation": "",
+                "configIssues": "",
+                "descr": "",
+                "dn": "uni/tn-{{ tenant }}/out-{{ l3out_name }}/lnodep-{{ l3out_name }}_nodeProfile",
+                "name": "{{ l3out_name }}_nodeProfile",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "tag": "yellow-green",
+                "targetDscp": "unspecified",
+                "userdom": ":all:"
+              },
+              "children": [
+                {
+                  "l3extLIfP": {
+                    "attributes": {
+                      "annotation": "",
+                      "descr": "",
+                      "name": "{{ l3out_name }}_vpcIpv4",
+                      "nameAlias": "",
+                      "ownerKey": "",
+                      "ownerTag": "",
+                      "prio": "unspecified",
+                      "tag": "yellow-green",
+                      "userdom": ":all:"
+                    },
+                    "children": [
+                      {
+                        "l3extRsArpIfPol": {
+                          "attributes": {
+                            "annotation": "",
+                            "tnArpIfPolName": "",
+                            "userdom": "all"
+                          }
+                        }
+                      },
+                      {
+                        "l3extRsEgressQosDppPol": {
+                          "attributes": {
+                            "annotation": "",
+                            "tnQosDppPolName": "",
+                            "userdom": "all"
+                          }
+                        }
+                      },
+                      {
+                        "l3extRsIngressQosDppPol": {
+                          "attributes": {
+                            "annotation": "",
+                            "tnQosDppPolName": "",
+                            "userdom": "all"
+                          }
+                        }
+                      },
+                      {
+                        "l3extRsLIfPCustQosPol": {
+                          "attributes": {
+                            "annotation": "",
+                            "tnQosCustomPolName": "",
+                            "userdom": "all"
+                          }
+                        }
+                      },
+                      {
+                        "l3extRsNdIfPol": {
+                          "attributes": {
+                            "annotation": "",
+                            "tnNdIfPolName": "",
+                            "userdom": "all"
+                          }
+                        }
+                      },
+                      {
+                        "l3extRsPathL3OutAtt": {
+                          "attributes": {
+                            "addr": "0.0.0.0",
+                            "annotation": "",
+                            "autostate": "disabled",
+                            "descr": "",
+                            "encap": "vlan-{{ vlan }}",
+                            "encapScope": "local",
+                            "ifInstT": "ext-svi",
+                            "ipv6Dad": "enabled",
+                            "llAddr": "::",
+                            "mac": "00:22:BD:F8:19:FF",
+                            "mode": "regular",
+                            "mtu": "inherit",
+                            "tDn": "topology/pod-{{leaf1_id[0]}}/protpaths-{{leaf1_id}}-{{leaf2_id}}/pathep-[{{ first_vpc }}]",
+                            "targetDscp": "unspecified",
+                            "userdom": ":all:"
+                          },
+                          "children": [
+                            {
+                              "l3extMember": {
+                                "attributes": {
+                                  "addr": "{{ leaf2_ip }}",
+                                  "annotation": "",
+                                  "descr": "",
+                                  "ipv6Dad": "enabled",
+                                  "llAddr": "::",
+                                  "name": "",
+                                  "nameAlias": "",
+                                  "side": "B",
+                                  "userdom": ":all:"
+                                },
+                                "children": [
+                                  {
+                                    "l3extIp": {
+                                      "attributes": {
+                                        "addr": "{{ aci_vip }}",
+                                        "annotation": "",
+                                        "descr": "",
+                                        "ipv6Dad": "enabled",
+                                        "name": "",
+                                        "nameAlias": "",
+                                        "userdom": ":all:"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "l3extMember": {
+                                "attributes": {
+                                  "addr": "{{ leaf1_ip }}",
+                                  "annotation": "",
+                                  "descr": "",
+                                  "ipv6Dad": "enabled",
+                                  "llAddr": "::",
+                                  "name": "",
+                                  "nameAlias": "",
+                                  "side": "A",
+                                  "userdom": ":all:"
+                                },
+                                "children": [
+                                  {
+                                    "l3extIp": {
+                                      "attributes": {
+                                        "addr": "{{ aci_vip }}",
+                                        "annotation": "",
+                                        "descr": "",
+                                        "ipv6Dad": "enabled",
+                                        "name": "",
+                                        "nameAlias": "",
+                                        "userdom": ":all:"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "l3extRsPathL3OutAtt": {
+                          "attributes": {
+                            "addr": "0.0.0.0",
+                            "annotation": "",
+                            "autostate": "disabled",
+                            "descr": "",
+                            "encap": "vlan-{{ vlan }}",
+                            "encapScope": "local",
+                            "ifInstT": "ext-svi",
+                            "ipv6Dad": "enabled",
+                            "llAddr": "::",
+                            "mac": "00:22:BD:F8:19:FF",
+                            "mode": "regular",
+                            "mtu": "inherit",
+                            "tDn": "topology/pod-{{leaf3_id[0]}}/protpaths-{{leaf3_id}}-{{leaf4_id}}/pathep-[{{ second_vpc }}]",
+                            "targetDscp": "unspecified",
+                            "userdom": ":all:"
+                          },
+                          "children": [
+                            {
+                              "l3extMember": {
+                                "attributes": {
+                                  "addr": "{{ leaf4_ip }}",
+                                  "annotation": "",
+                                  "descr": "",
+                                  "ipv6Dad": "enabled",
+                                  "llAddr": "::",
+                                  "name": "",
+                                  "nameAlias": "",
+                                  "side": "B",
+                                  "userdom": ":all:"
+                                },
+                                "children": [
+                                  {
+                                    "l3extIp": {
+                                      "attributes": {
+                                        "addr": "{{ aci_vip }}",
+                                        "annotation": "",
+                                        "descr": "",
+                                        "ipv6Dad": "enabled",
+                                        "name": "",
+                                        "nameAlias": "",
+                                        "userdom": ":all:"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "l3extMember": {
+                                "attributes": {
+                                  "addr": "{{ leaf3_ip }}",
+                                  "annotation": "",
+                                  "descr": "",
+                                  "ipv6Dad": "enabled",
+                                  "llAddr": "::",
+                                  "name": "",
+                                  "nameAlias": "",
+                                  "side": "A",
+                                  "userdom": ":all:"
+                                },
+                                "children": [
+                                  {
+                                    "l3extIp": {
+                                      "attributes": {
+                                        "addr": "{{ aci_vip }}",
+                                        "annotation": "",
+                                        "descr": "",
+                                        "ipv6Dad": "enabled",
+                                        "name": "",
+                                        "nameAlias": "",
+                                        "userdom": ":all:"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "l3extRsNodeL3OutAtt": {
+                    "attributes": {
+                      "annotation": "",
+                      "configIssues": "",
+                      "rtrId": "10.0.0.{{leaf1_id}}",
+                      "rtrIdLoopBack": "no",
+                      "tDn": "topology/pod-{{leaf1_id.0}}/node-{{leaf1_id}}",
+                      "userdom": ":all:"
+                    },
+                  }
+                },
+                {
+                  "l3extRsNodeL3OutAtt": {
+                    "attributes": {
+                      "annotation": "",
+                      "configIssues": "",
+                      "rtrId": "10.0.0.{{leaf3_id}}",
+                      "rtrIdLoopBack": "no",
+                      "tDn": "topology/pod-{{leaf3_id.0}}/node-{{leaf3_id}}",
+                      "userdom": ":all:"
+                    },
+                  }
+                },
+                {
+                  "l3extRsNodeL3OutAtt": {
+                    "attributes": {
+                      "annotation": "",
+                      "configIssues": "",
+                      "rtrId": "10.0.0.{{leaf2_id}}",
+                      "rtrIdLoopBack": "no",
+                      "tDn": "topology/pod-{{leaf2_id.0}}/node-{{leaf2_id}}",
+                      "userdom": ":all:"
+                    },
+                  }
+                },
+                {
+                  "l3extRsNodeL3OutAtt": {
+                    "attributes": {
+                      "annotation": "",
+                      "configIssues": "",
+                      "rtrId": "10.0.0.{{leaf4_id}}",
+                      "rtrIdLoopBack": "no",
+                      "tDn": "topology/pod-{{leaf4_id.0}}/node-{{leaf4_id}}",
+                      "userdom": ":all:"
+                    },
+                  }
+                }
+              ]
+            }
+          }
+
+    - name: Create static routes on {{ leaf1_id }}
+      cisco.aci.aci_l3out_static_routes:
+        logical_node: '{{ l3out_name }}_nodeProfile'
+        node_id: '{{ leaf1_id }}'
+        pod_id: '{{ leaf1_id.0 }}'
+        prefix: '{{ item }}'
+        l3out_name: '{{ l3out_name }}'
+        <<: *anchor
+      loop: '{{ static_routes }}'
+
+    - name: Create static routes on {{ leaf2_id }}
+      cisco.aci.aci_l3out_static_routes:
+        logical_node: '{{ l3out_name }}_nodeProfile'
+        node_id: '{{ leaf2_id }}'
+        pod_id: '{{ leaf2_id.0 }}'
+        prefix: '{{ item }}'
+        l3out_name: '{{ l3out_name }}'
+        <<: *anchor
+      loop: '{{ static_routes }}'
+
+    - name: Create static routes on {{ leaf3_id }}
+      cisco.aci.aci_l3out_static_routes:
+        logical_node: '{{ l3out_name }}_nodeProfile'
+        node_id: '{{ leaf3_id }}'
+        pod_id: '{{ leaf3_id.0 }}'
+        prefix: '{{ item }}'
+        l3out_name: '{{ l3out_name }}'
+        <<: *anchor
+      loop: '{{ static_routes }}'
+
+    - name: Create static routes on {{ leaf4_id }}
+      cisco.aci.aci_l3out_static_routes:
+        logical_node: '{{ l3out_name }}_nodeProfile'
+        node_id: '{{ leaf4_id }}'
+        pod_id: '{{ leaf4_id.0 }}'
+        prefix: '{{ item }}'
+        l3out_name: '{{ l3out_name }}'
+        <<: *anchor
+      loop: '{{ static_routes }}'
+
+    - name: Add ExtEpg
+      cisco.aci.aci_l3out_extepg:
+        l3out: '{{ l3out_name }}'
+        name: default
+        <<: *anchor
+
+    - name: Add External Subnet
+      cisco.aci.aci_l3out_extsubnet:
+        l3out: '{{ l3out_name }}'
+        extepg: default
+        network: '{{ item }}'
+        scope: import-security
+        <<: *anchor
+      loop: '{{ static_routes }}'
+
+
+
+
