@@ -1,3 +1,4 @@
 ---
 epg_list:
   - { tenant: 'Vmware_Cloud_Director', ap: 'ansible', epg: 'vc-mgmt', bd: 'bd_10.36.1.0-24', vrf: 'vrf1', svi_ip: '10.36.1.1' }
+  - { tenant: 'Vmware_Cloud_Director', ap: 'ansible', epg: 'vc-overlay1', bd: 'bd_10.36.5.0-24', vrf: 'vrf1', svi_ip: '10.36.5.1' }
