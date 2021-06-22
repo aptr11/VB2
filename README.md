@@ -1,5 +1,5 @@
 # ACI-Ansible
-Cisco ACI project
+Cisco ACI project. Main project documentation: https://confluence.visma.com/display/VITC/Cisco+ACI+Documentation  
 
 Install
 ```
