@@ -1,0 +1,19 @@
+---
+- name: Query all EPGs
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+    - name: Query all EPGs
+      cisco.aci.aci_epg:
+        host: apic1.vismait.no
+        username: admin
+        password: VismaAC1
+        state: query
+        validate_certs: no
+      register: query_result
+
+    - name: Check values
+      debug:
+        msg: "{{ query_result }}"

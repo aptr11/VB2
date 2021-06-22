@@ -5,13 +5,12 @@ vrf: DC_transfer
 subnets:
   - 10.36.1.0/24
 anchor1: pod-1/node-111
-anchor1_ip: 10.1.172.65/28
+anchor1_ip: 10.1.172.97/28
 anchor2: pod-2/node-211
-anchor2_ip: 10.1.172.66/28
-floating_ip: 10.1.172.67/28
-firewall_ip: 10.1.172.68
+anchor2_ip: 10.1.172.98/28
+floating_ip: 10.1.172.99/28
+firewall_ip: 10.1.172.100
 firewall_asn: "65525"
-vlan: 2836      # check next available vlan id in vcenter, this must be unique!
+vlan: 2837      # check next available vlan id in vcenter, this must be unique!
 l3domain: PA-TEST-L3-Domain
 vmware_domain: ACI-Test-vDS01
-

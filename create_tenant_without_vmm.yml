@@ -38,7 +38,7 @@
         bd: '{{ item.bd }}'
         gateway: '{{ item.svi_ip }}'
         mask: '{{ item.bd[-2:] }}'
-        scope: public
+        scope: [public, shared]
         <<: *anchor
       <<: *loop
 

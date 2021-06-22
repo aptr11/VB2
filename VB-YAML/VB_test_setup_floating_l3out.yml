@@ -1,0 +1,451 @@
+---
+#Playbook notes:
+# Usage: ansible-playbook setup_floating_l3out.yml --extra-vars @l3outs/XXX.yml
+
+- name: Create L3out
+  hosts: apic1
+  gather_facts: no
+
+  vars:
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      state: present
+      annotation: orchestrator:ansible
+    loop: &loop
+      loop:
+        '{{ input_data }}'
+
+    l3out_name: '{{ vrf }}-default-l3out'
+
+  tasks:
+    - name: Check if tenant is VISMA_IT_Transit and adjust L3out name accordingly
+      set_fact:
+        l3out_name: '{{ vrf }}-{{ vlan }}-l3out'
+      when: tenant == 'VISMA_IT_Transit'
+
+    - name: Create VRF
+      cisco.aci.aci_vrf:
+        tenant: '{{ tenant }}'
+        vrf: '{{ vrf }}'
+        policy_control_preference: enforced
+        policy_control_direction: ingress
+        <<: *anchor
+
+    - name: Add new contract
+      cisco.aci.aci_contract:
+        tenant: '{{ tenant }}'
+        contract: '{{ vrf }}-external-networks'
+        scope: context
+        <<: *anchor
+      when: epgs is defined
+
+    - name: Add contract subject
+      cisco.aci.aci_contract_subject:
+        tenant: '{{ tenant }}'
+        contract: '{{ vrf }}-external-networks'
+        subject: default
+        reverse_filter: yes
+        priority: level1
+        dscp: unspecified
+        <<: *anchor
+      when: epgs is defined
+
+    - name: Add contract subject to filter binding
+      cisco.aci.aci_contract_subject_to_filter:
+        tenant: '{{ tenant }}'
+        contract: '{{ vrf }}-external-networks'
+        subject: default
+        filter: default
+        <<: *anchor
+      when: epgs is defined
+
+    - name: Add contract to EPG binding
+      cisco.aci.aci_epg_to_contract:
+        tenant: '{{ tenant }}'
+        ap: '{{ item.ap }}'
+        epg: '{{ item.epg }}'
+        contract: '{{ vrf }}-external-networks'
+        contract_type: consumer
+        <<: *anchor
+      loop:
+        '{{ epgs }}'
+      when: epgs is defined
+
+    - name: Bind Bridge Domain to L3out
+      cisco.aci.aci_bd_to_l3out:
+        tenant: '{{ tenant }}'
+        bd: '{{ item }}'
+        l3out: '{{ vrf }}-default-l3out'
+        <<: *anchor
+      loop:
+        '{{ BDs }}'
+      when: BDs is defined
+
+    - name: Create L3out (using JSON string)
+      cisco.aci.aci_rest:
+        host: '{{ ansible_hostname }}'
+        username: '{{ ansible_username }}'
+        password: '{{ ansible_password }}'
+        validate_certs: false
+        path: /api/mo/uni.json
+        method: post
+        content:
+          {
+              "l3extOut": {
+                  "attributes": {
+                      "annotation": "orchestrator:ansible",
+                      "descr": "",
+                      "dn": "uni/tn-{{ tenant }}/out-{{ l3out_name }}",
+                      "enforceRtctrl": "export",
+                      "mplsEnabled": "no",
+                      "name": "{{ l3out_name }}",
+                      "targetDscp": "unspecified",
+                      "userdom": ":all:"
+                  },
+                  "children": [
+                      {
+                          "l3extRsL3DomAtt": {
+                              "attributes": {
+                                  "annotation": "orchestrator:ansible",
+                                  "tDn": "uni/l3dom-{{ l3domain }}",
+                                  "userdom": ":all:"
+                              }
+                          }
+                      },
+                      {
+                          "l3extRsEctx": {
+                              "attributes": {
+                                  "annotation": "orchestrator:ansible",
+                                  "tnFvCtxName": "{{ vrf }}",
+                                  "userdom": "all"
+                              }
+                          }
+                      },
+                      {
+                          "l3extLNodeP": {
+                              "attributes": {
+                                  "annotation": "orchestrator:ansible",
+                                  "configIssues": "",
+                                  "descr": "",
+                                  "name": "nodeProfiles",
+                                  "tag": "yellow-green",
+                                  "targetDscp": "unspecified",
+                                  "userdom": ":all:"
+                              },
+                              "children": [
+                                  {
+                                      "l3extRsNodeL3OutAtt": {
+                                          "attributes": {
+                                              "annotation": "orchestrator:ansible",
+                                              "configIssues": "",
+											  "rtrId": 1.1.1.111
+                                              "rtrIdLoopBack": "no",
+                                              "tDn": "topology/{{ anchor1 }}",
+                                              "userdom": ":all:"
+                                          }
+                                      }
+                                  },
+                                  {
+                                      "l3extRsNodeL3OutAtt": {
+                                          "attributes": {
+                                              "annotation": "orchestrator:ansible",
+                                              "configIssues": "",
+											  "rtrId": 1.1.1.211
+                                              "rtrIdLoopBack": "no",
+                                              "tDn": "topology/{{ anchor2 }}",
+                                              "userdom": ":all:"
+                                          }
+                                      }
+                                  },
+                                  {
+                                      "l3extLIfP": {
+                                          "attributes": {
+                                              "annotation": "orchestrator:ansible",
+                                              "descr": "",
+                                              "name": "interfaceProfiles",
+                                              "prio": "unspecified",
+                                              "tag": "yellow-green",
+                                              "userdom": ":all:"
+                                          },
+                                          "children": [
+                                              {
+                                                  "l3extVirtualLIfP": {
+                                                      "attributes": {
+                                                          "addr": "{{ anchor1_ip }}",
+                                                          "annotation": "orchestrator:ansible",
+                                                          "autostate": "disabled",
+                                                          "descr": "",
+                                                          "encap": "vlan-{{ vlan }}",
+                                                          "encapScope": "local",
+                                                          "ifInstT": "ext-svi",
+                                                          "ipv6Dad": "enabled",
+                                                          "llAddr": "::",
+                                                          "mac": "00:22:BD:F8:19:FF",
+                                                          "mode": "regular",
+                                                          "mtu": "1500",
+                                                          "name": "",
+                                                          "nodeDn": "topology/{{ anchor1 }}",
+                                                          "targetDscp": "unspecified",
+                                                          "userdom": ":all:"
+                                                      },
+                                                      "children": [
+                                                          {
+                                                              "l3extRsDynPathAtt": {
+                                                                  "attributes": {
+                                                                      "annotation": "orchestrator:ansible",
+                                                                      "floatingAddr": "{{ floating_ip }}",
+                                                                      "forgedTransmit": "Disabled",
+                                                                      "macChange": "Disabled",
+                                                                      "promMode": "Disabled",
+                                                                      "tDn": "uni/vmmp-VMware/dom-{{ vmware_domain }}",
+                                                                      "userdom": ":all:"
+                                                                  }
+                                                              }
+                                                          },
+                                                          {
+                                                              "bgpPeerP": {
+                                                                  "attributes": {
+                                                                      "addr": "{{ firewall_ip }}",
+                                                                      "addrTCtrl": "af-ucast",
+                                                                      "adminSt": "enabled",
+                                                                      "allowedSelfAsCnt": "3",
+                                                                      "annotation": "orchestrator:ansible",
+                                                                      "ctrl": "",
+                                                                      "ctrlExt": "",
+                                                                      "descr": "",
+                                                                      "name": "",
+                                                                      "peerCtrl": "",
+                                                                      "privateASctrl": "",
+                                                                      "ttl": "1",
+                                                                      "userdom": ":all:",
+                                                                      "weight": "0"
+                                                                  },
+                                                                  "children": [
+                                                                      {
+                                                                          "bgpRsPeerPfxPol": {
+                                                                              "attributes": {
+                                                                                  "annotation": "",
+                                                                                  "tnBgpPeerPfxPolName": "",
+                                                                                  "userdom": "all"
+                                                                              }
+                                                                          }
+                                                                      },
+                                                                      {
+                                                                          "bgpAsP": {
+                                                                              "attributes": {
+                                                                                  "annotation": "orchestrator:ansible",
+                                                                                  "asn": "{{ firewall_asn }}",
+                                                                                  "descr": "",
+                                                                                  "name": "",
+                                                                                  "nameAlias": "",
+                                                                                  "userdom": ":all:"
+                                                                              }
+                                                                          }
+                                                                      }
+                                                                  ]
+                                                              }
+                                                          }
+                                                      ]
+                                                  }
+                                              },
+                                              {
+                                                  "l3extVirtualLIfP": {
+                                                      "attributes": {
+                                                          "addr": "{{ anchor2_ip }}",
+                                                          "annotation": "orchestrator:ansible",
+                                                          "autostate": "disabled",
+                                                          "encap": "vlan-{{ vlan }}",
+                                                          "encapScope": "local",
+                                                          "ifInstT": "ext-svi",
+                                                          "ipv6Dad": "enabled",
+                                                          "llAddr": "::",
+                                                          "mac": "00:22:BD:F8:19:FF",
+                                                          "mode": "regular",
+                                                          "mtu": "1500",
+                                                          "name": "",
+                                                          "nodeDn": "topology/{{ anchor2 }}",
+                                                          "targetDscp": "unspecified",
+                                                          "userdom": ":all:"
+                                                      },
+                                                      "children": [
+                                                          {
+                                                              "l3extRsDynPathAtt": {
+                                                                  "attributes": {
+                                                                      "annotation": "orchestrator:ansible",
+                                                                      "floatingAddr": "{{ floating_ip }}",
+                                                                      "forgedTransmit": "Disabled",
+                                                                      "macChange": "Disabled",
+                                                                      "promMode": "Disabled",
+                                                                      "tDn": "uni/vmmp-VMware/dom-{{ vmware_domain }}",
+                                                                      "userdom": ":all:"
+                                                                  }
+                                                              }
+                                                          },
+                                                          {
+                                                              "bgpPeerP": {
+                                                                  "attributes": {
+                                                                      "addr": "{{ firewall_ip }}",
+                                                                      "addrTCtrl": "af-ucast",
+                                                                      "adminSt": "enabled",
+                                                                      "allowedSelfAsCnt": "3",
+                                                                      "annotation": "orchestrator:ansible",
+                                                                      "ctrl": "",
+                                                                      "ctrlExt": "",
+                                                                      "descr": "",
+                                                                      "name": "",
+                                                                      "nameAlias": "",
+                                                                      "peerCtrl": "",
+                                                                      "privateASctrl": "",
+                                                                      "ttl": "1",
+                                                                      "userdom": ":all:",
+                                                                      "weight": "0"
+                                                                  },
+                                                                  "children": [
+                                                                      {
+                                                                          "bgpRsPeerPfxPol": {
+                                                                              "attributes": {
+                                                                                  "annotation": "",
+                                                                                  "tnBgpPeerPfxPolName": "",
+                                                                                  "userdom": "all"
+                                                                              }
+                                                                          }
+                                                                      },
+                                                                      {
+                                                                          "bgpAsP": {
+                                                                              "attributes": {
+                                                                                  "annotation": "orchestrator:ansible",
+                                                                                  "asn": "{{ firewall_asn }}",
+                                                                                  "descr": "",
+                                                                                  "name": "",
+                                                                                  "nameAlias": "",
+                                                                                  "userdom": ":all:"
+                                                                              }
+                                                                          }
+                                                                      }
+                                                                  ]
+                                                              }
+                                                          }
+                                                      ]
+                                                  }
+                                              },
+                                              {
+                                                  "l3extRsNdIfPol": {
+                                                      "attributes": {
+                                                          "annotation": "",
+                                                          "tnNdIfPolName": "",
+                                                          "userdom": "all"
+                                                      }
+                                                  }
+                                              },
+                                              {
+                                                  "l3extRsLIfPCustQosPol": {
+                                                      "attributes": {
+                                                          "annotation": "",
+                                                          "tnQosCustomPolName": "",
+                                                          "userdom": "all"
+                                                      }
+                                                  }
+                                              },
+                                              {
+                                                  "l3extRsIngressQosDppPol": {
+                                                      "attributes": {
+                                                          "annotation": "",
+                                                          "tnQosDppPolName": "",
+                                                          "userdom": "all"
+                                                      }
+                                                  }
+                                              },
+                                              {
+                                                  "l3extRsEgressQosDppPol": {
+                                                      "attributes": {
+                                                          "annotation": "",
+                                                          "tnQosDppPolName": "",
+                                                          "userdom": "all"
+                                                      }
+                                                  }
+                                              },
+                                              {
+                                                  "l3extRsArpIfPol": {
+                                                      "attributes": {
+                                                          "annotation": "",
+                                                          "tnArpIfPolName": "",
+                                                          "userdom": "all"
+                                                      }
+                                                  }
+                                              }
+                                          ]
+                                      }
+                                  }
+                              ]
+                          }
+                      },
+                      {
+                          "l3extInstP": {
+                              "attributes": {
+                                  "annotation": "orchestrator:ansible",
+                                  "descr": "",
+                                  "exceptionTag": "",
+                                  "floodOnEncap": "disabled",
+                                  "matchT": "AtleastOne",
+                                  "name": "External_EPG",
+                                  "nameAlias": "",
+                                  "prefGrMemb": "exclude",
+                                  "prio": "unspecified",
+                                  "targetDscp": "unspecified",
+                                  "userdom": ":all:"
+                              },
+                              "children": [
+                                  {
+                                      "l3extSubnet": {
+                                          "attributes": {
+                                              "aggregate": "",
+                                              "annotation": "orchestrator:ansible",
+                                              "descr": "",
+                                              "ip": "0.0.0.0/0",
+                                              "name": "",
+                                              "nameAlias": "",
+                                              "scope": "import-security",
+                                              "userdom": ":all:"
+                                          }
+                                      }
+                                  },
+                                  {
+                                      "fvRsCustQosPol": {
+                                          "attributes": {
+                                              "annotation": "",
+                                              "tnQosCustomPolName": "",
+                                              "userdom": "all"
+                                          }
+                                      }
+                                  }
+                              ]
+                          }
+                      },
+                      {
+                          "bgpExtP": {
+                              "attributes": {
+                                  "annotation": "",
+                                  "descr": "",
+                                  "nameAlias": "",
+                                  "userdom": ":all:"
+                              }
+                          }
+                      }
+                  ]
+              }
+          }
+
+    - name: Bind contract to external EPG
+      cisco.aci.aci_l3out_extepg_to_contract:
+        tenant: '{{ tenant }}'
+        l3out: '{{ l3out_name }}'
+        extepg : External_EPG
+        contract: '{{ vrf }}-external-networks'
+        contract_type: provider
+        <<: *anchor
+      loop:
+        '{{ epgs }}'
+      when: epgs is defined

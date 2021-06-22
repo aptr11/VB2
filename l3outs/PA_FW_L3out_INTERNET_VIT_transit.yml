@@ -1,0 +1,15 @@
+---
+
+tenant: VISMA_IT_Transit
+vrf: INTERNET
+anchor1: pod-1/node-111
+anchor1_ip: 10.1.172.113/28
+anchor2: pod-2/node-211
+anchor2_ip: 10.1.172.114/28
+floating_ip: 10.1.172.115/28
+firewall_ip: 10.1.172.116
+firewall_asn: "65525"
+vlan: 2839      # check next available vlan id in vcenter, this must be unique!
+l3domain: PA-TEST-L3-Domain
+vmware_domain: ACI-Test-vDS01
+

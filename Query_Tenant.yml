@@ -1,0 +1,42 @@
+---
+- name: Query tenant
+  hosts: apic1
+  gather_facts: no
+  vars:
+    input_data:
+      - { tenant: 'VISMA_IT_Transit' }
+      
+
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      tenant: '{{ item.tenant }}'
+      state: present
+    loop: &loop
+      loop:
+        '{{ input_data }}'
+      loop_control:
+        pause: 0.2
+
+  tasks:
+    - name: Query tenant
+      cisco.aci.aci_tenant:
+        state: query
+        <<: *anchor
+      <<: *loop
+      register: query_result      
+
+
+      
+    - name: Query EPGs
+      cisco.aci.aci_epg:
+        state: query
+        <<: *anchor
+      <<: *loop
+      register: query_result      
+      
+    - name: Check values
+      debug:
+        msg: "{{ query_result }}"
