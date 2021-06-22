@@ -20,32 +20,32 @@
       set_fact:
         l3out_name: '{{ vrf }}-{{ vlan }}-l3out'
 
-    - name: Add new contract
-      cisco.aci.aci_contract:
-        tenant: '{{ tenant }}'
-        contract: '{{ vrf }}-external-networks'
-        scope: context
-        <<: *anchor
+    #- name: Add new contract
+    #  cisco.aci.aci_contract:
+    #    tenant: '{{ tenant }}'
+    #    contract: '{{ vrf }}-external-networks'
+    #    scope: context
+    #    <<: *anchor
 
-    - name: Add contract subject
-      cisco.aci.aci_contract_subject:
-        tenant: '{{ tenant }}'
-        contract: '{{ vrf }}-external-networks'
-        subject: default
-        reverse_filter: yes
-        priority: level1
-        dscp: unspecified
-        <<: *anchor
+    #- name: Add contract subject
+    #  cisco.aci.aci_contract_subject:
+    #    tenant: '{{ tenant }}'
+    #    contract: '{{ vrf }}-external-networks'
+    #    subject: default
+    #    reverse_filter: yes
+    #    priority: level1
+    #    dscp: unspecified
+    #    <<: *anchor
 
-    - name: Add contract subject to filter binding
-      cisco.aci.aci_contract_subject_to_filter:
-        tenant: '{{ tenant }}'
-        contract: '{{ vrf }}-external-networks'
-        subject: default
-        filter: default
-        <<: *anchor
+    #- name: Add contract subject to filter binding
+    #  cisco.aci.aci_contract_subject_to_filter:
+    #    tenant: '{{ tenant }}'
+    #    contract: '{{ vrf }}-external-networks'
+    #    subject: default
+    #    filter: default
+    #    <<: *anchor
 
-    - name: Create L3out (using JSON string)
+    - name: Create L3out {{l3out_name}} (using JSON string)
       cisco.aci.aci_rest:
         host: '{{ ansible_hostname }}'
         username: '{{ ansible_username }}'
@@ -353,7 +353,7 @@
                                   "matchT": "AtleastOne",
                                   "name": "External_EPG_{{ vlan }}",
                                   "nameAlias": "",
-                                  "prefGrMemb": "exclude",
+                                  "prefGrMemb": "include",
                                   "prio": "unspecified",
                                   "targetDscp": "unspecified",
                                   "userdom": ":all:"
@@ -385,15 +385,6 @@
               }
           }
 
-    - name: Bind contract to external EPG
-      cisco.aci.aci_l3out_extepg_to_contract:
-        tenant: '{{ tenant }}'
-        l3out: '{{ l3out_name }}'
-        extepg : 'External_EPG_{{ vlan }}'
-        contract: '{{ vrf }}-external-networks'
-        contract_type: consumer
-        <<: *anchor
-
     - name: Add External Subnets
       cisco.aci.aci_l3out_extsubnet:
         tenant: '{{ tenant }}'
@@ -404,25 +395,28 @@
         <<: *anchor
       loop: '{{ subnets }}'
 
-    - name: Add 10.0.0.0/8 if vrf DC_transfer
-      cisco.aci.aci_l3out_extsubnet:
-        tenant: '{{ tenant }}'
-        l3out: '{{ l3out_name }}'
-        extepg : 'External_EPG_{{ vlan }}'
-        network: 10.0.0.0/8
-        scope: export-rtctrl
-        <<: *anchor
-      when: 'vrf is "DC_transfer"'
-
-    - name: Add 0.0.0.0/0 if vrf INTERNET
-      cisco.aci.aci_l3out_extsubnet:
-        tenant: '{{ tenant }}'
-        l3out: '{{ l3out_name }}'
-        extepg : 'External_EPG_{{ vlan }}'
-        network: 0.0.0.0/0
-        scope: export-rtctrl
-        <<: *anchor
-      when: 'vrf is "INTERNET"'
-
-
+    - name: Add 0.0.0.0/0 Export Route Control Subnet with Aggregate
+      cisco.aci.aci_rest:
+        host: '{{ ansible_hostname }}'
+        username: '{{ ansible_username }}'
+        password: '{{ ansible_password }}'
+        validate_certs: false
+        path: /api/mo/uni.json
+        method: post
+        content:
+          {
+            "l3extSubnet": {
+              "attributes": {
+                "aggregate": "export-rtctrl",
+                "annotation": "orchestrator:ansible",
+                "descr": "",
+                "dn": "uni/tn-{{ tenant }}/out-{{ l3out_name }}/instP-External_EPG_{{ vlan }}/extsubnet-[0.0.0.0/0]",
+                "ip": "0.0.0.0/0",
+                "name": "",
+                "nameAlias": "",
+                "scope": "export-rtctrl",
+                "userdom": ":all:"
+              }
+            }
+          }
 
