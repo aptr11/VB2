@@ -1,0 +1,108 @@
+---
+#
+# Usage: ansible-playbook deploy_netscaler_epg.yml --extra-vars @netscaler/xxx.yml
+#
+- name: Deploy EPG for Netscaler
+  hosts: apic1
+  gather_facts: no
+  vars:
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      tenant: '{{ tenant }}'
+      state: present
+      annotation: orchestrator:ansible
+
+  tasks:
+    - name: Create BD
+      cisco.aci.aci_bd:
+        bd: '{{ bd }}'
+        vrf: '{{ vrf }}'
+        arp_flooding: no
+        <<: *anchor
+
+    - name: Create subnet
+      cisco.aci.aci_bd_subnet:
+        bd: '{{ bd }}'
+        gateway: '{{ svi }}'
+        mask: '{{ bd[-2:] }}'
+        scope: public
+        <<: *anchor
+
+    - name: Create APs
+      cisco.aci.aci_ap:
+        ap: '{{ ap }}'
+        <<: *anchor
+
+    - name: Create EPGs
+      cisco.aci.aci_epg:
+        ap: '{{ ap }}'
+        epg: '{{ epg }}'
+        bd: '{{ bd }}'
+        <<: *anchor
+
+    - name: Add physical domain to EPG
+      cisco.aci.aci_epg_to_domain:
+        ap: '{{ ap }}'
+        epg: '{{ epg }}'
+        domain: Netscaler_ADC_doamin
+        domain_type: phys
+        <<: *anchor
+
+    - name: Create contract
+      cisco.aci.aci_contract:
+        contract: '{{ contract }}'
+        scope: context
+        <<: *anchor
+
+    - name: Add contract subject
+      cisco.aci.aci_contract_subject:
+        contract: '{{ contract }}'
+        subject: default
+        reverse_filter: yes
+        priority: level1
+        dscp: unspecified
+        <<: *anchor
+
+    - name: Add contract subject to filter binding
+      cisco.aci.aci_contract_subject_to_filter:
+        contract: '{{ contract }}'
+        subject: default
+        filter: default
+        <<: *anchor
+
+    - name: Provide contract from EPG 
+      cisco.aci.aci_epg_to_contract:
+        ap: '{{ ap }}'
+        epg: '{{ epg }}'
+        contract: '{{ contract }}'
+        contract_type: provider
+        <<: *anchor
+
+    - name: Deploy vlan to Netscaler in Ulven
+      cisco.aci.aci_static_binding_to_epg:
+        ap: '{{ ap }}'
+        epg: '{{ epg }}'
+        interface_type: vpc
+        interface_mode: trunk
+        leafs: 111-112 
+        interface: Citrix_ADC_Ulven
+        pod_id: 1
+        encap_id: '{{ vlan }}'
+        deploy_immediacy: lazy
+        <<: *anchor
+
+    - name: Deploy vlan to Netscaler in Rosenholm
+      cisco.aci.aci_static_binding_to_epg:
+        ap: '{{ ap }}'
+        epg: '{{ epg }}'
+        interface_type: vpc
+        interface_mode: trunk
+        leafs: 211-212
+        interface: Citrix_ADC_Rosenholm
+        pod_id: 2
+        encap_id: '{{ vlan }}'
+        deploy_immediacy: lazy
+        <<: *anchor
