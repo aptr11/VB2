@@ -21,6 +21,11 @@
         bd: '{{ bd }}'
         vrf: '{{ vrf }}'
         arp_flooding: no
+        enable_routing: yes
+        endpoint_move_detect: default
+        ip_learning: yes
+        limit_ip_learn: yes
+        multi_dest: bd-flood
         <<: *anchor
 
     - name: Create subnet
@@ -29,6 +34,8 @@
         gateway: '{{ svi }}'
         mask: '{{ bd[-2:] }}'
         scope: public
+        preferred: no
+        subnet_control: nd_ra
         <<: *anchor
 
     - name: Create APs
@@ -41,44 +48,16 @@
         ap: '{{ ap }}'
         epg: '{{ epg }}'
         bd: '{{ bd }}'
+        intra_epg_isolation: unenforced
+        preferred_group: yes
         <<: *anchor
 
     - name: Add physical domain to EPG
       cisco.aci.aci_epg_to_domain:
         ap: '{{ ap }}'
         epg: '{{ epg }}'
-        domain: Netscaler_ADC_doamin
+        domain: Netscaler_ADC_domain
         domain_type: phys
-        <<: *anchor
-
-    - name: Create contract
-      cisco.aci.aci_contract:
-        contract: '{{ contract }}'
-        scope: context
-        <<: *anchor
-
-    - name: Add contract subject
-      cisco.aci.aci_contract_subject:
-        contract: '{{ contract }}'
-        subject: default
-        reverse_filter: yes
-        priority: level1
-        dscp: unspecified
-        <<: *anchor
-
-    - name: Add contract subject to filter binding
-      cisco.aci.aci_contract_subject_to_filter:
-        contract: '{{ contract }}'
-        subject: default
-        filter: default
-        <<: *anchor
-
-    - name: Provide contract from EPG 
-      cisco.aci.aci_epg_to_contract:
-        ap: '{{ ap }}'
-        epg: '{{ epg }}'
-        contract: '{{ contract }}'
-        contract_type: provider
         <<: *anchor
 
     - name: Deploy vlan to Netscaler in Ulven

@@ -5,5 +5,4 @@ epg: PA-TEST-EPG-3
 bd: BD_10.42.254.0_24
 svi: 10.42.254.1/24
 vrf: VRF-1
-contract: ADC_LB
 vlan: 3110
