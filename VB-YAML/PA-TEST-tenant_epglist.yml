@@ -1,5 +1,5 @@
 ---
 epg_list:
   - { tenant: 'PA-TEST-tenant', ap: 'APP-2', epg: 'PA-TEST-EPG-1', bd: 'BD_10.0.11.0-24', vrf: 'VRF-1', svi_ip: '10.0.11.1' }
-  - { tenant: 'PA-TEST-tenant', ap: 'APP-2', epg: 'PA-TEST-EPG-2', bd: 'BD_10.0.12.0-24', vrf: 'VRF-1', svi_ip: '10.0.12.1' }
-  - { tenant: 'PA-TEST-tenant', ap: 'APP-2', epg: 'PA-TEST-EPG-3', bd: 'BD_10.42.254.0_24', vrf: 'VRF-1', svi_ip: '10.42.254.1' }
+  - { tenant: 'PA-TEST-tenant', ap: 'APP-2', epg: 'PA-TEST-EPG-2', bd: 'BD_10.0.12.0-24', vrf: 'VRF-2', svi_ip: '10.0.12.1' }
+
