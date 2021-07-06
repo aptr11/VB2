@@ -28,8 +28,11 @@
         bd: '{{ item.bd }}'
         vrf: '{{ item.vrf }}'
         arp_flooding: no
-        #l2_unknown_unicast: flood
-        #endpoint_clear: yes
+        enable_routing: yes
+        endpoint_move_detect: default
+        ip_learning: yes
+        limit_ip_learn: yes
+        multi_dest: bd-flood
         <<: *anchor
       <<: *loop
 
@@ -53,6 +56,8 @@
         ap: '{{ item.ap }}'
         epg: '{{ item.epg }}'
         bd: '{{ item.bd }}'
+        intra_epg_isolation: unenforced
+        preferred_group: yes
         <<: *anchor
       <<: *loop
 

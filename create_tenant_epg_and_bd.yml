@@ -23,13 +23,25 @@
         <<: *anchor
       <<: *loop
 
+    - name: Create VRF
+      cisco.aci.aci_vrf:
+        vrf: '{{ item.vrf }}'
+        policy_control_direction: ingress
+        policy_control_preference: enforced
+        preferred_group: enabled
+        <<: *anchor
+      <<: *loop
+
     - name: Create BDs
       cisco.aci.aci_bd:
         bd: '{{ item.bd }}'
         vrf: '{{ item.vrf }}'
         arp_flooding: no
-        #l2_unknown_unicast: flood
-        #endpoint_clear: yes
+        enable_routing: yes
+        endpoint_move_detect: default
+        ip_learning: yes
+        limit_ip_learn: yes
+        multi_dest: bd-flood
         <<: *anchor
       <<: *loop
 
@@ -38,7 +50,9 @@
         bd: '{{ item.bd }}'
         gateway: '{{ item.svi_ip }}'
         mask: '{{ item.bd[-2:] }}'
-        scope: public
+        scope: [public, shared]
+        preferred: no
+        subnet_control: nd_ra
         <<: *anchor
       <<: *loop
 
@@ -53,6 +67,8 @@
         ap: '{{ item.ap }}'
         epg: '{{ item.epg }}'
         bd: '{{ item.bd }}'
+        intra_epg_isolation: unenforced
+        preferred_group: yes
         <<: *anchor
       <<: *loop
 
