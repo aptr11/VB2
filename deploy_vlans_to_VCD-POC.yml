@@ -15,8 +15,18 @@
     epgs:
       - { tenant: Vmware_Cloud_Director, ap: ansible, epg: vc-mgmt, vlan: 1970}
       - { tenant: Vmware_Cloud_Director, ap: ansible, epg: vc-overlay1, vlan: 1971}
+      - { tenant: Vmware_Cloud_Director, ap: ansible, epg: vc-overlay2, vlan: 1972}
 
   tasks:
+    - name: Add physical domain to EPG
+      cisco.aci.aci_epg_to_domain:
+        ap: '{{ item.ap }}'
+        epg: '{{ item.epg }}'
+        domain: VCD-POC
+        domain_type: phys
+        <<: *anchor
+      loop: "{{ epgs }}"
+
     - name: Loop vlans and esxi interfaces 
       cisco.aci.aci_static_binding_to_epg:
         tenant: '{{ item.0.tenant }}'
