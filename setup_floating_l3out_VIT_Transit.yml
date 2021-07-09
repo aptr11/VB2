@@ -195,6 +195,19 @@
                                                                           }
                                                                       },
                                                                       {
+                                                                        "bgpLocalAsnP": {
+                                                                          "attributes": {
+                                                                            "annotation": "",
+                                                                            "asnPropagate": "replace-as",
+                                                                            "descr": "",
+                                                                            "localAsn": "{{ local_asn }}",
+                                                                            "name": "",
+                                                                            "nameAlias": "",
+                                                                            "userdom": ":all:"
+                                                                          }
+                                                                        }
+                                                                      },
+                                                                      {
                                                                           "bgpAsP": {
                                                                               "attributes": {
                                                                                   "annotation": "orchestrator:ansible",
@@ -273,6 +286,19 @@
                                                                                   "userdom": "all"
                                                                               }
                                                                           }
+                                                                      },
+                                                                      {
+                                                                        "bgpLocalAsnP": {
+                                                                          "attributes": {
+                                                                            "annotation": "",
+                                                                            "asnPropagate": "replace-as",
+                                                                            "descr": "",
+                                                                            "localAsn": "{{ local_asn }}",
+                                                                            "name": "",
+                                                                            "nameAlias": "",
+                                                                            "userdom": ":all:"
+                                                                          }
+                                                                        }
                                                                       },
                                                                       {
                                                                           "bgpAsP": {
