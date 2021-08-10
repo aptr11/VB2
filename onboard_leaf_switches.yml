@@ -1,0 +1,81 @@
+---
+
+- name: Onboard leaf switches into fabric
+  hosts: apic1
+  gather_facts: no
+  vars:
+    anchor: &anchor
+      host: '{{ ansible_hostname }}'
+      user: '{{ ansible_username }}'
+      password: '{{ ansible_password }}'
+      validate_certs: false
+      state: present
+      annotation: orchestrator:ansible
+
+  tasks:
+    - name: Add fabric node
+      cisco.aci.aci_fabric_node:
+        serial: '{{ item.sn }}'
+        node_id: '{{ item.id }}'
+        pod_id: '{{ item.id[0] }}'
+        switch: '{{ item.name }}'
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
+
+    - name: Add ipv4 address to in band mgmt interface
+      cisco.aci.aci_static_node_mgmt_address:
+        epg: Default
+        pod_id: '{{ item.id[0] }}'
+        type: in_band
+        node_id: '{{ item.id }}'
+        ipv4_address: '{{ item.inb_ip }}'
+        ipv4_gw: "10.60.255.254"
+
+    - name: Add ipv4 address to out of band mgmt interface
+      cisco.aci.aci_static_node_mgmt_address:
+        epg: default
+        pod_id: '{{ item.id[0] }}'
+        band_type: out_of_band
+        node_id: '{{ item.id }}'
+        ipv4_address: '{{ item.oob_ip }}'
+        ipv4_gw: '{{ item.oob_gw }}'
+
+    - name: Create Leaf Profile 
+      cisco.aci.aci_switch_policy_leaf_profile:
+        leaf_profile: '{{ item.name }}'
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
+
+    - name: Add switch policy leaf profile selector
+      cisco.aci.aci_switch_leaf_selector:
+        leaf_profile: '{{ item.name }}'
+        leaf: '{{ item.name }}'
+        leaf_node_blk: 'node_blk_{{ item.id }}'
+        from: '{{ item.id }}'
+        to: '{{ item.id }}'
+        #policy_group: <policygroupname>
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
+
+    - name: Add leaf_interface_profile
+      cisco.aci.aci_interface_policy_leaf_profile:
+        interface_profile: '{{ item.name }}'
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
+
+    - name: Associate interface selector profile to switch policy leaf profile
+      cisco.aci.aci_interface_selector_to_switch_policy_leaf_profile:
+        leaf_profile: '{{ item.name }}'
+        interface_selector: '{{ item.name }}'
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
+
+    - name: Add vPC Pairs
+      cisco.aci.aci_switch_policy_vpc_protection_group:
+        protection_group: 'L{{ item.vpc }}'
+        protection_group_id: '{{ item.vpc[:3] }}'
+        switch_1_id: '{{ item.vpc[:3] }}'
+        switch_2_id: '{{ item.vpc[-3:] }}'
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
+
