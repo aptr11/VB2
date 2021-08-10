@@ -30,15 +30,19 @@
         node_id: '{{ item.id }}'
         ipv4_address: '{{ item.inb_ip }}'
         ipv4_gw: "10.60.255.254"
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
 
     - name: Add ipv4 address to out of band mgmt interface
       cisco.aci.aci_static_node_mgmt_address:
         epg: default
         pod_id: '{{ item.id[0] }}'
-        band_type: out_of_band
+        type: out_of_band
         node_id: '{{ item.id }}'
         ipv4_address: '{{ item.oob_ip }}'
         ipv4_gw: '{{ item.oob_gw }}'
+        <<: *anchor
+      loop: "{{ leaf_switches }}"
 
     - name: Create Leaf Profile 
       cisco.aci.aci_switch_policy_leaf_profile:
