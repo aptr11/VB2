@@ -18,6 +18,21 @@
         pause: 0.2
 
   tasks:
+    - name: Trigger fabric snapshot (then pause 3 sec)
+      cisco.aci.aci_config_snapshot:
+        export_policy: ansible_auto_snapshot
+        max_count: 3
+        description: Backup taken before running other tasks in playbook.
+        host: '{{ ansible_hostname }}'
+        user: '{{ ansible_username }}'
+        password: '{{ ansible_password }}'
+        validate_certs: false
+        state: present
+        annotation: orchestrator:ansible
+
+    - pause:
+        seconds: 3
+
     - name: Create tenants
       cisco.aci.aci_tenant:
         <<: *anchor

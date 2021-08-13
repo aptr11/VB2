@@ -23,6 +23,16 @@
     l3out_name: '{{ vrf }}-default-l3out'
 
   tasks:
+    - name: Trigger fabric snapshot (then pause 3 sec)
+      cisco.aci.aci_config_snapshot:
+        export_policy: ansible_auto_snapshot
+        max_count: 3
+        description: Backup taken before running other tasks in playbook.
+        <<: *anchor
+
+    - pause:
+        seconds: 3
+
     - name: Create VRF
       cisco.aci.aci_vrf:
         tenant: '{{ tenant }}'

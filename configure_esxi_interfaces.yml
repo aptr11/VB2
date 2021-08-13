@@ -17,6 +17,16 @@
         '{{ esxi_interfaces }}'
 
   tasks:
+    - name: Trigger fabric snapshot (then pause 3 sec)
+      cisco.aci.aci_config_snapshot:
+        export_policy: ansible_auto_snapshot
+        max_count: 3
+        description: Backup taken before running other tasks in playbook.
+        <<: *anchor
+
+    - pause:
+        seconds: 3
+
     - name: Create Interface Policy
       cisco.aci.aci_interface_policy_leaf_policy_group:
         lag_type: leaf
