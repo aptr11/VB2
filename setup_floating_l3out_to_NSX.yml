@@ -2,7 +2,6 @@
 
 # Notes
 # - Physical and L3 Domains must be setup prior to running this script
-# - Local AS is hardcoded to 65530
 # - Anchor1 & 2 should be in the same DC as nsx_ip1, anchor3 & 4 should be in the same DC as nsx_ip2
 
 - name: Create floating L3out to NSX Edge nodes (from tenant VISMA_IT_Transit)
@@ -10,26 +9,27 @@
   gather_facts: no
 
   vars:
-    # This was used under the VCD/NSX POC
+    # This input was used under the VCD/NSX POC
     tenant: VISMA_IT_Transit
-    vrf: DC_transfer
-    l3out_name: DC_transfer-VCD-NSX-2
+    vrf: INTERNET
+    l3out_name: INTERNET-VCD-NSX-1
     l3domain: VCD-POC_L3Dom
     physdomain: VCD-POC
-    vlan: 1983       #both domains must contain this vlan id!
+    vlan: 1984       #both domains must contain this vlan id!
     anchor1: pod-1/node-111
-    anchor1_ip: 10.36.7.2/28
+    anchor1_ip: 172.27.27.2/28
     anchor2: pod-1/node-112
-    anchor2_ip: 10.36.7.3/28
+    anchor2_ip: 172.27.27.3/28
     anchor3: pod-2/node-211
-    anchor3_ip: 10.36.7.4/28
+    anchor3_ip: 172.27.27.4/28
     anchor4: pod-2/node-212
-    anchor4_ip: 10.36.7.5/28
-    floating_ip: 10.36.7.1/28
-    nsx_ip1: 10.36.7.6
-    nsx_ip2: 10.36.7.7
+    anchor4_ip: 172.27.27.5/28
+    floating_ip: 172.27.27.1/28
+    nsx_ip1: 172.27.27.6
+    nsx_ip2: 172.27.27.7
     nsx_asn: '64546'
-    advertise_to_nsx: 10.0.0.0/8
+    local_asn: '65520'
+    advertise_to_nsx: 0.0.0.0/0
 
 
   tasks:
@@ -200,7 +200,7 @@
                                                        "descr":"",
                                                        "name":"",
                                                        "nameAlias":"",
-                                                       "peerCtrl":"",
+                                                       "peerCtrl":"bfd",
                                                        "privateASctrl":"",
                                                        "ttl":"1",
                                                        "userdom":":all:",
@@ -222,7 +222,7 @@
                                                                 "annotation":"orchestrator:ansible",
                                                                 "asnPropagate":"replace-as",
                                                                 "descr":"",
-                                                                "localAsn":"65530",
+                                                                "localAsn":"{{local_asn}}",
                                                                 "name":"",
                                                                 "nameAlias":"",
                                                                 "userdom":":all:"
@@ -294,7 +294,7 @@
                                                        "descr":"",
                                                        "name":"",
                                                        "nameAlias":"",
-                                                       "peerCtrl":"",
+                                                       "peerCtrl":"bfd",
                                                        "privateASctrl":"",
                                                        "ttl":"1",
                                                        "userdom":":all:",
@@ -316,7 +316,7 @@
                                                                 "annotation":"orchestrator:ansible",
                                                                 "asnPropagate":"replace-as",
                                                                 "descr":"",
-                                                                "localAsn":"65530",
+                                                                "localAsn":"{{local_asn}}",
                                                                 "name":"",
                                                                 "nameAlias":"",
                                                                 "userdom":":all:"
@@ -388,7 +388,7 @@
                                                        "descr":"",
                                                        "name":"",
                                                        "nameAlias":"",
-                                                       "peerCtrl":"",
+                                                       "peerCtrl":"bfd",
                                                        "privateASctrl":"",
                                                        "ttl":"1",
                                                        "userdom":":all:",
@@ -410,7 +410,7 @@
                                                                 "annotation":"orchestrator:ansible",
                                                                 "asnPropagate":"replace-as",
                                                                 "descr":"",
-                                                                "localAsn":"65530",
+                                                                "localAsn":"{{local_asn}}",
                                                                 "name":"",
                                                                 "nameAlias":"",
                                                                 "userdom":":all:"
@@ -482,7 +482,7 @@
                                                        "descr":"",
                                                        "name":"",
                                                        "nameAlias":"",
-                                                       "peerCtrl":"",
+                                                       "peerCtrl":"bfd",
                                                        "privateASctrl":"",
                                                        "ttl":"1",
                                                        "userdom":":all:",
@@ -504,7 +504,7 @@
                                                                 "annotation":"orchestrator:ansible",
                                                                 "asnPropagate":"replace-as",
                                                                 "descr":"",
-                                                                "localAsn":"65530",
+                                                                "localAsn":"{{local_asn}}",
                                                                 "name":"",
                                                                 "nameAlias":"",
                                                                 "userdom":":all:"
